@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  bsb-web-service:
+    build: .
+    ports:
+      - "4567:4567"
+    environment:
+      - RACK_ENV=production
+      - PORT=4567
+      - HOST=0.0.0.0
+      - BSB_API_TOKENS=your-secure-token-here
+      - MAX_REQUESTS_PER_MINUTE=100
+    volumes:
+      - ./config:/app/config:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4567/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

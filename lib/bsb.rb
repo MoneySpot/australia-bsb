@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'bsb/version'
+require_relative 'bsb/version'
 require 'json'
-require 'bsb_number_validator'
+require_relative 'bsb_number_validator'
 
 module BSB
   DB_FILEPATH = 'config/bsb_db.json'

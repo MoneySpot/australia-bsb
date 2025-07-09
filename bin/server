@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative '../app'
+
+puts "Starting BSB Web Service..."
+puts "Environment: #{ENV['RACK_ENV'] || 'development'}"
+puts "Port: #{ENV['PORT'] || 4567}"
+puts "Host: #{ENV['HOST'] || 'localhost'}"
+
+BSBWebService.run!

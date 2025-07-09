@@ -1,0 +1,91 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# BSB Web Service Deployment Script
+
+require 'fileutils'
+
+puts "BSB Web Service Deployment"
+puts "=" * 30
+
+# Check if Docker is available
+def docker_available?
+  system('docker --version > /dev/null 2>&1')
+end
+
+# Check if Ruby is available
+def ruby_available?
+  system('ruby --version > /dev/null 2>&1')
+end
+
+# Deploy with Docker
+def deploy_with_docker
+  puts "Deploying with Docker..."
+  
+  # Create Gemfile.lock if it doesn't exist
+  unless File.exist?('Gemfile.lock')
+    puts "Creating Gemfile.lock..."
+    if system('bundle install --quiet')
+      puts "✅ Gemfile.lock created successfully"
+    else
+      puts "⚠️  Bundle install failed, creating empty Gemfile.lock"
+      File.write('Gemfile.lock', '')
+    end
+  end
+  
+  # Build the image
+  puts "Building Docker image..."
+  unless system('docker build -t bsb-web-service .')
+    puts "❌ Docker build failed"
+    exit 1
+  end
+  
+  # Run the container
+  puts "Starting container..."
+  unless system('docker run -d -p 4567:4567 --name bsb-web-service bsb-web-service')
+    puts "❌ Container start failed"
+    exit 1
+  end
+  
+  puts "✅ Service deployed with Docker!"
+  puts "🌐 Service available at: http://localhost:4567"
+  puts "🔍 Check logs: docker logs bsb-web-service"
+  puts "🛑 Stop service: docker stop bsb-web-service"
+end
+
+# Deploy with Ruby
+def deploy_with_ruby
+  puts "Deploying with Ruby..."
+  
+  # Install dependencies
+  puts "Installing dependencies..."
+  unless system('bundle install')
+    puts "❌ Bundle install failed"
+    exit 1
+  end
+  
+  # Start the service
+  puts "Starting service..."
+  exec('ruby bin/server')
+end
+
+# Main deployment logic
+if docker_available?
+  puts "Docker detected. Would you like to deploy with Docker? (y/n)"
+  response = gets.chomp.downcase
+  
+  if response == 'y' || response == 'yes'
+    deploy_with_docker
+  elsif ruby_available?
+    deploy_with_ruby
+  else
+    puts "❌ Neither Docker nor Ruby available for deployment"
+    exit 1
+  end
+elsif ruby_available?
+  deploy_with_ruby
+else
+  puts "❌ Neither Docker nor Ruby available for deployment"
+  puts "Please install Ruby or Docker to deploy the service"
+  exit 1
+end
