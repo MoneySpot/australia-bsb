@@ -26,7 +26,11 @@ class BSBWebService < Sinatra::Base
     end
     
     # Rate limiting
-    use WebService::RateLimiter
+    rate_limit_options = {}
+    if ENV['RACK_ENV'] == 'test'
+      rate_limit_options = { max_requests: 1000, window_seconds: 60 }
+    end
+    use WebService::RateLimiter, rate_limit_options
     
     # Authentication
     use WebService::Authentication
@@ -37,6 +41,9 @@ class BSBWebService < Sinatra::Base
     headers 'Cache-Control' => 'no-cache, no-store, must-revalidate'
     headers 'Pragma' => 'no-cache'
     headers 'Expires' => '0'
+    headers 'Access-Control-Allow-Origin' => '*'
+    headers 'Access-Control-Allow-Methods' => 'GET, OPTIONS'
+    headers 'Access-Control-Allow-Headers' => 'Content-Type, Authorization'
   end
 
   # Health check endpoint
@@ -63,70 +70,11 @@ class BSBWebService < Sinatra::Base
     end
   end
 
-  # BSB lookup via query parameter
-  get '/lookup' do
-    bsb_number = params[:bsb]
-    
-    unless bsb_number
-      halt 400, error_response('Missing required parameter: bsb')
+  # Handle unsupported methods on BSB endpoint
+  [:post, :put, :patch, :delete].each do |method|
+    send(method, '/bsb/:number') do
+      halt 405, error_response('Method not allowed')
     end
-
-    # Validate BSB number format
-    unless bsb_number.match?(/^\d{3}-?\d{3}$/)
-      halt 400, error_response('Invalid BSB number format. Expected format: 123456 or 123-456')
-    end
-
-    # Normalize and lookup BSB
-    result = BSB.lookup(bsb_number)
-    
-    if result
-      success_response(result)
-    else
-      halt 404, error_response('BSB number not found')
-    end
-  end
-
-  # API documentation endpoint
-  get '/docs' do
-    {
-      title: 'BSB Web Service API',
-      version: BSB::VERSION,
-      endpoints: {
-        health: {
-          method: 'GET',
-          path: '/health',
-          description: 'Check service health',
-          authentication: false
-        },
-        bsb_lookup_path: {
-          method: 'GET',
-          path: '/bsb/{number}',
-          description: 'Look up BSB details by number in path',
-          authentication: true,
-          parameters: {
-            number: 'BSB number (6 digits, with or without dash)'
-          }
-        },
-        bsb_lookup_query: {
-          method: 'GET',
-          path: '/lookup?bsb={number}',
-          description: 'Look up BSB details by number in query parameter',
-          authentication: true,
-          parameters: {
-            bsb: 'BSB number (6 digits, with or without dash)'
-          }
-        }
-      },
-      rate_limiting: {
-        window: '1 minute',
-        max_requests: 100
-      },
-      authentication: {
-        type: 'Bearer Token',
-        header: 'Authorization: Bearer {token}',
-        description: 'Include your API token in the Authorization header'
-      }
-    }.to_json
   end
 
   private

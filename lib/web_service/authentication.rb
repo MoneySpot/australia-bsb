@@ -44,7 +44,7 @@ module WebService
     private
 
     def public_endpoints
-      ['/health', '/docs']
+      ['/health']
     end
 
     def load_valid_tokens

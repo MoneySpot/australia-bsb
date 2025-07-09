@@ -29,13 +29,18 @@ module WebService
           }.to_json
         end
 
-        # Handle 404 errors
+        # Handle 404 errors - only for truly unmatched routes
         not_found do
-          {
-            success: false,
-            error: 'Endpoint not found',
-            timestamp: Time.now.iso8601
-          }.to_json
+          # Only use this for unmatched routes, not for explicit 404 responses
+          if response.body.empty?
+            {
+              success: false,
+              error: 'Endpoint not found',
+              timestamp: Time.now.iso8601
+            }.to_json
+          else
+            response.body
+          end
         end
 
         # Handle 405 errors (method not allowed)
