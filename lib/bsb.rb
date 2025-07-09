@@ -44,11 +44,29 @@ module BSB
     protected
 
     def data_hash
-      @data_hash ||= JSON.parse(File.read(File.expand_path("../#{DB_FILEPATH}", __dir__)))
+      @data_hash ||= begin
+        file_path = File.expand_path("../#{DB_FILEPATH}", __dir__)
+        JSON.parse(File.read(file_path))
+      rescue JSON::ParserError => e
+        warn "Error parsing BSB database: #{e.message}"
+        {}
+      rescue Errno::ENOENT => e
+        warn "BSB database file not found: #{e.message}"
+        {}
+      end
     end
 
     def bank_list
-      @bank_list ||= JSON.parse(File.read(File.expand_path('../config/bsb_bank_list.json', __dir__)))
+      @bank_list ||= begin
+        file_path = File.expand_path('../config/bsb_bank_list.json', __dir__)
+        JSON.parse(File.read(file_path))
+      rescue JSON::ParserError => e
+        warn "Error parsing bank list: #{e.message}"
+        {}
+      rescue Errno::ENOENT => e
+        warn "Bank list file not found: #{e.message}"
+        {}
+      end
     end
   end
 end

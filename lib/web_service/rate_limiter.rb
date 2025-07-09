@@ -11,10 +11,8 @@ module WebService
     end
 
     def call(env)
-      request = Rack::Request.new(env)
-      
       # Skip rate limiting for health check
-      if request.path_info == '/health'
+      if env['PATH_INFO'] == '/health'
         return @app.call(env)
       end
 
@@ -33,13 +31,11 @@ module WebService
     def identify_client(env)
       # Use IP address and User-Agent as client identifier
       # In production, you might want to use authenticated user ID
-      request = Rack::Request.new(env)
-      ip = request.ip || env['REMOTE_ADDR']
+      ip = env['HTTP_X_FORWARDED_FOR'] || env['HTTP_X_REAL_IP'] || env['REMOTE_ADDR'] || 'unknown'
       user_agent = env['HTTP_USER_AGENT'] || 'unknown'
       
-      # Create a hash of IP and User-Agent for more specific identification
-      require 'digest'
-      Digest::SHA256.hexdigest("#{ip}:#{user_agent}")[0..16]
+      # Create a simple hash of IP and User-Agent for more specific identification
+      "#{ip}:#{user_agent.hash}"
     end
 
     def rate_limited?(client_id)
